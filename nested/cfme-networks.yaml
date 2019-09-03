@@ -1,0 +1,182 @@
+heat_template_version: queens
+
+parameters:
+  config_data:
+    type: json
+    description: network configuration data
+
+resources:
+
+  cloudforms-bastion-network:
+    type: OS::Neutron::Net
+    properties:
+      admin_state_up: true
+      name: cloudforms-bastion-network
+      port_security_enabled: true
+      dns_domain:
+        get_param: [ config_data, dns_domain ]
+ 
+  cloudforms-bastion-subnet:
+    type: OS::Neutron::Subnet
+    properties:
+      cidr:
+        get_param: [ config_data, bastion_cidr ]
+      name: cloudforms-bastion-subnet
+      enable_dhcp: true
+      dns_nameservers:
+        get_param: [ config_data, dns_servers ]
+      allocation_pools:
+        get_param: [ config_data, bastion_dhcp_range ]
+      gateway_ip:
+        get_param: [ config_data, bastion_gw ]
+      network:
+        get_resource: cloudforms-bastion-network
+
+  cloudforms-portal-network:
+    type: OS::Neutron::Net
+    properties:
+      admin_state_up: true
+      name: cloudforms-portal-network
+      port_security_enabled: true
+      dns_domain:
+        get_param: [ config_data, dns_domain ]
+ 
+  cloudforms-portal-subnet:
+    type: OS::Neutron::Subnet
+    properties:
+      cidr:
+        get_param: [ config_data, portal_cidr ]
+      name: cloudforms-portal-subnet
+      enable_dhcp: true
+      dns_nameservers:
+        get_param: [ config_data, dns_servers ]
+      allocation_pools:
+        get_param: [ config_data, portal_dhcp_range ]
+      gateway_ip:
+        get_param: [ config_data, portal_gw ]
+      network:
+        get_resource: cloudforms-portal-network
+
+  cloudforms-database-network:
+    type: OS::Neutron::Net
+    properties:
+      admin_state_up: true
+      name: cloudforms-database-network
+      port_security_enabled: true
+      dns_domain:
+        get_param: [ config_data, dns_domain ]
+ 
+  cloudforms-database-subnet:
+    type: OS::Neutron::Subnet
+    properties:
+      cidr:
+        get_param: [ config_data, db_cidr ]
+      name: cloudforms-database-subnet
+      enable_dhcp: true
+      dns_nameservers:
+        get_param: [ config_data, dns_servers ]
+      allocation_pools:
+        get_param: [ config_data, db_dhcp_range ]
+      gateway_ip:
+        get_param: [ config_data, db_gw ]
+      network:
+        get_resource: cloudforms-database-network
+
+  cloudforms-worker-network:
+    type: OS::Neutron::Net
+    properties:
+      admin_state_up: true
+      name: cloudforms-worker-network
+      port_security_enabled: true
+      dns_domain:
+        get_param: [ config_data, dns_domain ]
+ 
+  cloudforms-worker-subnet:
+    type: OS::Neutron::Subnet
+    properties:
+      cidr:
+        get_param: [ config_data, worker_cidr ]
+      name: cloudforms-worker-subnet
+      enable_dhcp: true
+      dns_nameservers:
+        get_param: [ config_data, dns_servers ]
+      allocation_pools:
+        get_param: [ config_data, worker_dhcp_range ]
+      gateway_ip:
+        get_param: [ config_data, worker_gw ]
+      network:
+        get_resource: cloudforms-worker-network
+
+  cloudforms-router:
+    type: OS::Neutron::Router
+    properties:
+      name: cloudforms-router
+      external_gateway_info:
+        network:
+          get_param: [ config_data, external_network ]
+
+  cloudforms-router-bastion-svi:
+    type: OS::Neutron::RouterInterface
+    properties:
+      router_id:
+        get_resource: cloudforms-router
+      subnet_id:
+        get_resource: cloudforms-bastion-subnet
+
+  cloudforms-router-portal-svi:
+    type: OS::Neutron::RouterInterface
+    properties:
+      router_id:
+        get_resource: cloudforms-router
+      subnet_id:
+        get_resource: cloudforms-portal-subnet
+
+  cloudforms-router-database-svi:
+    type: OS::Neutron::RouterInterface
+    properties:
+      router_id:
+        get_resource: cloudforms-router
+      subnet_id:
+        get_resource: cloudforms-database-subnet
+
+  cloudforms-router-worker-svi:
+    type: OS::Neutron::RouterInterface
+    properties:
+      router_id:
+        get_resource: cloudforms-router
+      subnet_id:
+        get_resource: cloudforms-worker-subnet
+
+outputs:
+  bastion-network:
+    description: the bastion-internal-network resource id
+    value:
+      get_attr: [ cloudforms-bastion-network, show, id ]
+  bastion-subnet:
+    description: the bastion-internal-subnet resource id
+    value:
+      get_attr: [ cloudforms-bastion-subnet, show, id ]
+  portal-network:
+    description: the portal-internal-network resource id
+    value:
+      get_attr: [ cloudforms-portal-network, show, id ]
+  portal-subnet:
+    description: the portal-internal-subnet resource id
+    value:
+      get_attr: [ cloudforms-portal-subnet, show, id ]
+  database-network:
+    description: the database-internal-network resource id
+    value:
+      get_attr: [ cloudforms-database-network, show, id ]
+  database-subnet:
+    description: the database-internal-subnet resource id
+    value:
+      get_attr: [ cloudforms-database-subnet, show, id ]
+  worker-network:
+    description: the worker-internal-network resource id
+    value:
+      get_attr: [ cloudforms-worker-network, show, id ]
+  worker-subnet:
+    description: the worker-internal-subnet resource id
+    value:
+      get_attr: [ cloudforms-worker-subnet, show, id ]

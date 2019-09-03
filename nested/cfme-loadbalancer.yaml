@@ -1,0 +1,75 @@
+heat_template_version: queens
+
+parameters:
+  config_data:
+    type: json
+    default: {}
+
+resources:
+
+  portal_lb:
+    type: OS::Octavia::LoadBalancer
+    properties:
+      name: cfme-portal-lb
+      vip_subnet:
+        get_param: [ config_data, external_subnet ]
+      description: "cfme portal load balancer"
+
+  portal_lb_listener_http:
+    type: OS::Octavia::Listener
+    properties:
+      name: cfme-portal-lb-listener-http
+      protocol: HTTP
+      protocol_port: 80
+      loadbalancer:
+        get_resource: portal_lb
+
+  portal_lb_listener_https:
+     type: OS::Octavia::Listener
+     properties:
+       name: cfme-portal-lb-listener-https
+       protocol: HTTPS
+       protocol_port: 443
+       loadbalancer:
+         get_resource: portal_lb
+
+  portal_lb_pool_http:
+    type: OS::Octavia::Pool
+    properties:
+      name: cfme-portal-lb-pool-http
+      lb_algorithm: ROUND_ROBIN
+      protocol: HTTP
+      session_persistence:
+        type: SOURCE_IP
+      listener:
+        get_resource: portal_lb_listener_http
+
+  portal_lb_pool_https:
+    type: OS::Octavia::Pool
+    properties:
+      name: cfme-portal-lb-pool-https
+      lb_algorithm: ROUND_ROBIN
+      protocol: HTTPS
+      session_persistence:
+        type: SOURCE_IP
+      listener:
+        get_resource: portal_lb_listener_https
+
+outputs:
+
+  portal_lb:
+    value:
+      get_attr: [ portal_lb, show, id ]
+  portal_lb_listener_http:
+    value:
+      get_attr: [ portal_lb_listener_http, show, id ]
+  portal_lb_listener_https: 
+    value:
+      get_attr: [ portal_lb_listener_https, show, id ]
+  portal_lb_pool_http: 
+    value:
+      get_attr: [ portal_lb_pool_http, show, id ]
+  portal_lb_pool_https: 
+    value:
+      get_attr: [ portal_lb_pool_https, show, id ]
+      

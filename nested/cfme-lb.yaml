@@ -1,0 +1,35 @@
+heat_template_version: queens
+
+parameters:
+  http_pool_id:
+    type: string
+  https_pool_id:
+    type: string
+  member_ip:
+    type: string
+  internal_subnet:
+    type: string
+
+resources:
+
+  portal_lb_pool_member_http:
+    type: OS::Octavia::PoolMember
+    properties:
+      pool:
+        get_param: http_pool_id
+      protocol_port: 80
+      address:
+        get_param: member_ip
+      subnet:
+        get_param: internal_subnet
+
+  portal_lb_pool_member_https:
+    type: OS::Octavia::PoolMember
+    properties:
+      pool:
+        get_param: https_pool_id
+      protocol_port: 443
+      address:
+        get_param: member_ip
+      subnet:
+        get_param: internal_subnet

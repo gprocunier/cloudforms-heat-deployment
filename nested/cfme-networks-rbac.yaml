@@ -1,0 +1,18 @@
+heat_template_version: queens
+
+parameters:
+  config_data:
+    type: json
+    description: network configuration data
+
+resources:
+
+  cloudforms-undercloud-network-rbac:
+    type: OS::Neutron::RBACPolicy
+    properties:
+      action: access_as_shared
+      object_id:
+        get_param: [ config_data, undercloud_network ]
+      object_type: network
+      target_tenant:
+        get_param: [ config_data, cloudforms_project ]

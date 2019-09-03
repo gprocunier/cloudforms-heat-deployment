@@ -1,0 +1,174 @@
+heat_template_version: queens
+parameters:
+  config_data:
+    type: json
+    default: {}
+  stack_bridge:
+    type: json
+    default: {}
+  node_bridge:
+    type: json
+    default: {}
+  ipa_enrollment:
+    type: json
+    default: {}
+
+resources:
+
+  bastion:
+    type: OS::Heat::ResourceGroup
+    properties:
+      count:
+        get_param: [ config_data, cfme_bastion_count ]
+      resource_def:
+        type:
+          get_param: [ config_data, heat_cfme_node ] 
+        properties:
+          node_bridge:
+            node_type: bastion
+            guest_name: "cfme-bastion-%index%.idm.example.com"
+            key_name:
+              get_param: [ stack_bridge, cloudforms_keypair ]
+            image:
+              get_param: [ config_data, bastion_image ]
+            flavor:
+              get_param: [ config_data, bastion_flavor ]
+            public_net_id:
+              get_param: [ config_data, external_network ]
+            private_net_id:
+              get_param: [ stack_bridge, bastion-network ]
+            private_subnet_id:
+              get_param: [ stack_bridge, bastion-subnet ]
+            internal_pool_name: bastion_internal_pool
+            NodeIndex: "%index%"
+            secgroup:
+              get_param: [ stack_bridge, bastion_secgroup ]
+            server_group:
+              get_param: [ stack_bridge, database_affinity_policy ]
+            cloudinit:
+              get_file: "https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/master/cloud-init/node-configuration.sh"
+            volnum: 0
+            lbnum: 0
+            extra_nic: False
+            
+  database:
+    type: OS::Heat::ResourceGroup
+    properties:
+      count:
+        get_param: [ config_data, cfme_database_count ]
+      resource_def:
+        type:
+          get_param: [ config_data, heat_cfme_node ]
+        properties:
+          node_bridge:
+            node_type: database
+            guest_name: "cfme-database-%index%.idm.example.com"
+            key_name:
+              get_param: [ stack_bridge, cloudforms_keypair ]
+            image:
+              get_param: [ config_data, cfme_image ]
+            flavor:
+              get_param: [ stack_bridge, cf_database_flavor_id ]
+            public_net_id:
+              get_param: [ config_data, external_network ]
+            private_net_id:
+              get_param: [ stack_bridge, database-network ]
+            private_subnet_id:
+              get_param: [ stack_bridge, database-subnet ]
+            internal_pool_name: database_internal_pool
+            NodeIndex: "%index%"
+            secgroup:
+              get_param: [ stack_bridge, database_secgroup ]
+            server_group:
+              get_param: [ stack_bridge, database_affinity_policy ]
+            cloudinit:
+              get_file: "https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/master/cloud-init/node-configuration.sh"
+            volnum: 1
+            volsize:
+              get_param: [ config_data, database_data_vol_size ]
+            lbnum: 0
+            extra_nic: False
+
+
+  portal:
+    type: OS::Heat::ResourceGroup
+    properties:
+      count:
+        get_param: [ config_data, cfme_portal_count ]
+      resource_def:
+        type:
+          get_param: [ config_data, heat_cfme_node ]
+        properties:
+          node_bridge:
+            node_type: portal
+            guest_name: "cfme-portal-%index%.idm.example.com"
+            key_name:
+              get_param: [ stack_bridge, cloudforms_keypair ]
+            image:
+              get_param: [ config_data, cfme_image ]
+            flavor:
+              get_param: [ stack_bridge, cf_portal_flavor_id ]
+            public_net_id:
+              get_param: [ config_data, external_network ]
+            private_net_id:
+              get_param: [ stack_bridge, portal-network ]
+            private_subnet_id:
+              get_param: [ stack_bridge, portal-subnet ]
+            internal_pool_name: portal_internal_pool
+            NodeIndex: "%index%"
+            secgroup:
+              get_param: [ stack_bridge, portal_secgroup ] 
+            server_group:
+              get_param: [ stack_bridge, portal_affinity_policy ]
+            cloudinit:
+              get_file: "https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/master/cloud-init/node-configuration.sh"
+            volnum: 1
+            volsize:
+              get_param: [ config_data, portal_data_vol_size ]
+            lbnum: 1
+            http_pool:
+              get_param: [ stack_bridge, portal_lb_pool_http ]
+            https_pool:
+              get_param: [ stack_bridge, portal_lb_pool_https ]
+            extra_nic: False
+
+  worker:
+    type: OS::Heat::ResourceGroup
+    properties:
+      count:
+        get_param: [ config_data, cfme_worker_count ]
+      resource_def:
+        type:
+          get_param: [ config_data, heat_cfme_node ]
+        properties:
+          node_bridge:          
+            node_type: worker
+            guest_name: "cfme-worker-%index%.idm.example.com"
+            key_name:
+              get_param: [ stack_bridge, cloudforms_keypair ]
+            image:
+              get_param: [ config_data, cfme_image ]
+            flavor:
+              get_param: [ stack_bridge, cf_worker_flavor_id ]
+            public_net_id:
+              get_param: [ config_data, external_network ]
+            private_net_id:
+              get_param: [ stack_bridge, worker-network ]
+            private_subnet_id:
+              get_param: [ stack_bridge, worker-subnet ]
+            internal_pool_name: worker_internal_pool
+            NodeIndex: "%index%"
+            secgroup:
+              get_param: [ stack_bridge, worker_secgroup ]
+            server_group:
+              get_param: [ stack_bridge, worker_affinity_policy ]
+            cloudinit:
+              get_file: "https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/master/cloud-init/node-configuration.sh"
+            volnum: 1
+            lbnum: 0
+            volsize:
+              get_param: [ config_data, worker_data_vol_size ]
+            extra_nic: True
+
+outputs:
+

@@ -1,0 +1,24 @@
+heat_template_version: queens
+
+parameters:
+  config_data:
+    type: json
+    default: {}
+    
+resources:
+
+  ### define the cloudforms server ssh key
+
+  cloudforms_keypair:
+    type: OS::Nova::KeyPair
+    properties:
+      name: cloudforms-server-key
+      save_private_key: true
+
+outputs:
+  cloudforms-server-key:
+    value:
+      get_attr: [ cloudforms_keypair, show ]
+  cloudforms-private-key:
+    value:
+      get_attr: [ cloudforms_keypair, private_key ]

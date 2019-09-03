@@ -1,0 +1,50 @@
+heat_template_version: 2015-04-30
+
+resources:
+  
+  cf_portal:
+    type: OS::Nova::Flavor
+    properties:
+      disk: 128
+      ephemeral: 0
+      flavorid: auto
+      is_public: false
+      name: cf-portal
+      ram: 16384
+      vcpus: 4
+
+  cf_database:
+    type: OS::Nova::Flavor
+    properties:
+      disk: 64
+      ephemeral: 0
+      flavorid: auto
+      is_public: false
+      name: cf-database
+      ram: 16384
+      vcpus: 4
+
+  cf_worker:
+    type: OS::Nova::Flavor
+    properties:
+      disk: 64
+      ephemeral: 0
+      flavorid: auto
+      is_public: false
+      name: cf-worker
+      ram: 12228
+      vcpus: 4
+
+outputs:
+
+  cf_portal_flavor_id:
+    value:
+      get_attr: [ cf_portal, show, id ]
+  
+  cf_database_flavor_id:
+    value:
+      get_attr: [ cf_database, show, id ]
+
+  cf_worker_flavor_id:
+    value:
+      get_attr: [ cf_worker, show, id ]

@@ -1,0 +1,88 @@
+heat_template_version: queens
+parameters:
+  config_data:
+    type: json
+    default: {}
+
+resources:
+
+  ### Security groups
+  
+  # This group governs icmp diagnostic capability + bastion ssh access
+  common_secgroup:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      description: Cloudforms Common ACLs
+      name: cfme-common-net-security
+      rules:
+        get_param: [ config_data, common_security_group ]
+  
+  # allow outside ssh and common flows
+  bastion_secgroup:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      description: Cloudforms Bastion ACLs
+      name: cfme-bastion-net-security
+      rules:
+        list_concat:
+          - { get_param: [ config_data, common_security_group ] }
+          - { get_param: [ config_data, bastion_security_group ] }
+
+  # allow database and common flows
+  database_secgroup:
+    type: OS::Neutron::SecurityGroup
+    depends_on:
+      - common_secgroup
+      - bastion_secgroup
+    properties:
+      description: Cloudforms Database ACLs
+      name: cfme-database-net-security
+      rules:
+        get_param: [ config_data, common_security_group ]
+
+  # allow web and common flows
+  portal_secgroup:
+    type: OS::Neutron::SecurityGroup
+    depends_on:
+      - common_secgroup
+      - bastion_secgroup
+    properties:
+      description: Cloudforms Portal ACLs
+      name: cfme-portal-net-security
+      rules:
+        list_concat:
+        - { get_param: [ config_data, common_security_group ] }
+        - { get_param: [ config_data, portal_security_group ] }
+
+  # allow worker and common flows
+  worker_secgroup:
+    type: OS::Neutron::SecurityGroup
+    depends_on:
+      - common_secgroup
+      - bastion_secgroup
+    properties:
+      description: Cloudforms Worker ACLs
+      name: cfme-worker-net-security
+      rules:
+        get_param: [ config_data, common_security_group ]
+
+outputs:
+  bastion_secgroup:
+    value:
+      get_attr: [ bastion_secgroup, show, id ]
+
+  database_secgroup:
+    value:
+      get_attr: [ database_secgroup, show, id ]
+
+  portal_secgroup:
+    value:
+      get_attr: [ portal_secgroup, show, id ]
+
+  worker_secgroup:
+    value:
+      get_attr: [ worker_secgroup, show, id ]
+
+  common_secgroup:
+    value:
+      get_attr: [ common_secgroup, show, id ]

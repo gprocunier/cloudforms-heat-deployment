@@ -1,0 +1,176 @@
+heat_template_version: queens
+
+parameters:
+
+  config_data:
+    type: json
+    default: {}
+  node_bridge:
+    type: json
+    default: {}
+  ipa_enrollment:
+    type: json
+    default: {}
+
+conditions:
+
+  attach_undercloud:
+    equals: [ { get_param: [ node_bridge, extra_nic ] } , True ]
+  use_otp:
+    equals: [ { get_param: [ ipa_enrollment, { get_param: [ node_bridge, guest_name ] }, name ] }, { get_param: [ node_bridge, guest_name ] } ]
+
+
+resources:
+
+  my_instance_port:
+     type: OS::Neutron::Port
+     properties:
+       network_id:
+         get_param: [ node_bridge, private_net_id ]
+       fixed_ips:
+         - subnet_id: { get_param: [ node_bridge, private_subnet_id ] }
+           ip_address: { get_param: [ config_data, { get_param: [ node_bridge, internal_pool_name ] }, { get_param: [ node_bridge, NodeIndex ] } ] }
+       security_groups:
+         - { get_param: [ node_bridge, secgroup ] }
+
+  undercloud_port:
+    type: OS::Neutron::Port
+    condition: attach_undercloud
+    properties:
+      network_id:
+        get_param: [ config_data, undercloud_network ]
+      security_groups:
+        - { get_param: [ node_bridge, secgroup ] }
+
+  my_instance_floating_ip:
+     type: OS::Neutron::FloatingIP
+     properties:
+       floating_network_id:
+         get_param: [ node_bridge, public_net_id ]
+       port_id:
+         get_resource: my_instance_port
+
+  nodeconfig:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: ungrouped
+      config:
+        str_replace:
+          template:
+            get_param: [ node_bridge, cloudinit ]
+          params:
+            ___FQDN___:
+              get_param: [ node_bridge, guest_name ]
+            ___KATELLO_URI___:
+              get_param: [ config_data,  rhsm_url ]
+            ___RHSM_ORG___:
+              get_param: [ config_data, rhsm_org ]
+            ___RHSM_KEY___:
+              get_param: [ config_data, rhsm_activationkey ]
+            ___DNS_DOMAIN___:
+              get_param: [ config_data, ipa_dns_domain ]
+            ___IPA_SERVER___:
+              get_param: [ config_data, ipa_server ]
+            ___IPA_PRINCIPAL___:
+              if:
+                - "use_otp"
+                - ''
+                - "--principal={ get_param: [ config_data, ipa_admin_principal ] }"
+            ___IPA_PASSWORD___:
+              if:
+                - "use_otp"
+                - { get_param: [ ipa_enrollment, { get_param: [ node_bridge, guest_name ] }, otp ] }
+                - { get_param: [ config_data, ipa_admin_password ] }
+            ___IPA_REALM___:
+              get_param: [ config_data, ipa_realm ]
+            ___FLOATING_IP___:
+              get_attr: [ my_instance_floating_ip, floating_ip_address ]
+            ___ROLE___:
+              get_param: [ node_bridge, node_type ]
+
+  mimepayload:
+    type: OS::Heat::MultipartMime
+    properties:
+      parts:
+        - config: { get_resource: nodeconfig }
+
+  my_instance:
+    type: OS::Nova::Server
+    depends_on: my_instance_port
+    depends_on: my_instance_floating_ip
+    depends_on: mimepayload     
+    properties:
+      name:
+        get_param: [ node_bridge, guest_name ]
+      image:
+        get_param: [ node_bridge, image ]
+      flavor:
+        get_param: [ node_bridge, flavor ]
+      key_name:
+        get_param: [ node_bridge, key_name ]
+      networks:
+        if:
+          - "attach_undercloud"
+          - - port:
+                get_resource: my_instance_port
+            - port:
+                get_resource: undercloud_port
+          - - port:
+                get_resource: my_instance_port
+      scheduler_hints:
+        group:
+          get_param: [ node_bridge, server_group ]
+      user_data_format: SOFTWARE_CONFIG
+      user_data:
+        get_resource: mimepayload
+
+
+  volumes:
+    type: OS::Heat::ResourceGroup
+    depends_on: my_instance
+    properties:
+      count:
+        get_param: [ node_bridge, volnum ]
+      resource_def:
+        type:
+          get_param: [ config_data, heat_cfme_volumes ]
+        properties:
+          instance_id:
+            get_resource: my_instance
+          volsize:
+            get_param: [ node_bridge, volsize ]
+
+  lb:
+    type: OS::Heat::ResourceGroup
+    depends_on: my_instance
+    properties:
+      count:
+        get_param: [ node_bridge, lbnum ]
+      resource_def:
+        type:
+          get_param: [ config_data, heat_cfme_lb ]
+        properties:
+          http_pool_id:
+            get_param: [ node_bridge, http_pool ]
+          https_pool_id:
+            get_param: [ node_bridge, https_pool ]
+          member_ip:
+            get_attr: [ my_instance, first_address ]
+          internal_subnet:
+            get_param: [ node_bridge, private_subnet_id ]
+
+outputs:
+  my_instance_private_ip:
+    description: IP address of my_instance in private network
+    value:
+      get_attr: [ my_instance, first_address ]
+  my_instance_public_ip:
+    description: Floating IP address of my_instance in public network
+    value:
+      get_attr: [ my_instance_floating_ip, floating_ip_address ]
+  my_instance:
+    value:
+       get_attr: [ my_instance, show ]
+  nodeconfig:
+    value:
+      get_attr: [ nodeconfig, show ]
