@@ -1,0 +1,182 @@
+parameter_defaults:
+  config_data:
+    ### RHSM
+    rhsm_org: 'MyOrg'
+    rhsm_activationkey: 'MyActivationKey'
+    rhsm_url: 'https://satellite.example.com/pub/katello-ca-consumer-latest.noarch.rpm'
+
+    ### Red Hat idm
+    ipa_dns_domain: 'idm.example.com'
+    ipa_server: 'idmserver.example.com'
+    ipa_realm: 'IDM.EXAMPLE.COM'
+
+    # These are only required if you are not generating OTP's for your cluster
+    # and are inhearently unsafe as cloudinit will keep the enrollment creds
+    # on the host in /var/lib/cloud/instance/script
+    #
+    # see contrib/ipa_enrollment.pl for otp generation
+    #
+    #ipa_admin_principal: 'admin@IDM.EXAMPLE.COM'
+    #ipa_admin_password: 'supersecretpasswoord'
+
+    ### OpenStack Information
+    keystone_domain: 'EXAMPLE'
+    operator_id: 'admin'
+    tenant_owner_role_id: 'Member'
+    cloudforms_project_id: project-guid-we-got-from-02-cloudforms-project
+    
+    ### General Network Information
+    external_network: network-guid-of-floating-ip-network
+    external_subnet: subnet-guid-of-floating-ip-subnet
+    undercloud_network: network-guid-of-undercloud-network
+    undercloud_subnet: subnet-guid-of-undercloud-subnet
+    dns_domain: idm.example.com.
+    dns_servers:
+      - 192.168.100.10
+      - 192.168.100.11
+
+    ### Cloud Images
+    bastion_image: rhel-server-7.6-update-5-x86_64-kvm
+    cfme_image: cfme-rhos-5.10.8.0-1.x86_64
+
+    ### Deployment Quantities
+    cfme_bastion_count: 1
+    cfme_database_count: 2
+    cfme_portal_count: 2
+    cfme_worker_count: 3
+
+    ### Bastion Host and Network
+    bastion_cidr: 172.16.71.0/24
+    bastion_gw: 172.16.71.1
+    bastion_dhcp_range:
+      - start: 172.16.71.5
+        end: 172.16.71.50
+    bastion_internal_pool:
+      - 172.16.71.10
+    bastion_flavor: 'm1.medium'
+
+    ### Portal Network
+    portal_cidr: 172.16.72.0/24
+    portal_gw: 172.16.72.1
+    portal_dhcp_range:
+      - start: 172.16.72.5
+        end: 172.16.72.50
+    portal_internal_pool:
+       - 172.16.72.110
+       - 172.16.72.111
+    portal_data_vol_size: 128
+    
+    ### Database Network
+    db_cidr: 172.16.73.0/24
+    db_gw: 172.16.73.1
+    db_dhcp_range:
+      - start: 172.16.73.5
+        end: 172.16.73.50
+    database_internal_pool:
+      - 172.16.73.100
+      - 172.16.73.101
+    database_data_vol_size: 128
+    
+    ### Worker Network
+    worker_cidr: 172.16.74.0/24
+    worker_gw: 172.16.74.1
+    worker_dhcp_range:
+      - start: 172.16.74.5
+        end: 172.16.74.50
+    worker_internal_pool:
+      - 172.16.74.120
+      - 172.16.74.121
+      - 172.16.74.122
+    worker_data_vol_size: 1024
+
+    ### Nested Stack URIs
+    heat_cfme_node: 'https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/master/nested/cfme-node.yaml'
+    heat_cfme_volumes: 'https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/master/nested/cfme-volumes.yaml'
+    heat_cfme_lb: 'https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/master/nested/cfme-lb.yaml'
+
+    ### Security Groups
+    common_security_group:
+      # Allow ICMP
+      - remote_ip_prefix: 0.0.0.0/0
+        protocol: icmp
+      # Allow the Bastion to SSH in to all Nodes
+      - remote_ip_prefix: 172.16.71.10/32
+        protocol: tcp
+        port_range_min: 22
+        port_range_max: 22     
+    bastion_security_group:
+      # Allow the outside LAN to ssh into the bastion
+      - remote_ip_prefix: 0.0.0.0/0
+        protocol: tcp
+        port_range_min: 22
+        port_range_max: 22
+    portal_security_group:
+      # Allow HTTP Traffic
+      - remote_ip_prefix: 0.0.0.0/0
+        protocol: tcp
+        port_range_min: 80
+        port_range_max: 80
+      # Allow HTTPS Traffic
+      - remote_ip_prefix: 0.0.0.0/0
+        protocol: tcp
+        port_range_min: 443
+        port_range_max: 443
+    database_security_group:
+      # Appliance Console Setup uses SSH to get the remote encryption key for postgres
+      - remote_ip_prefix: 172.16.72.110/32
+        protocol: tcp
+        port_range_min: 22
+        port_range_max: 22
+      - remote_ip_prefix: 172.16.72.111/32
+        protocol: tcp
+        port_range_min: 22
+        port_range_max: 22
+      - protocol: tcp
+        remote_ip_prefix: 172.16.73.100/32
+        port_range_min: 22
+        port_range_max: 22
+      - protocol: tcp
+        remote_ip_prefix: 172.16.73.101/32
+        port_range_min: 22
+        port_range_max: 22
+      - remote_ip_prefix: 172.16.74.120/32
+        protocol: tcp
+        port_range_min: 22
+        port_range_max: 22
+      - remote_ip_prefix: 172.16.74.121/32
+        protocol: tcp
+        port_range_min: 22
+        port_range_max: 22
+      - remote_ip_prefix: 172.16.74.122/32
+        protocol: tcp
+        port_range_min: 22
+        port_range_max: 22
+      # Allow postgresql connections from the nodes
+      - remote_ip_prefix: 172.16.72.110/32
+        protocol: tcp
+        port_range_min: 5432
+        port_range_max: 5432
+      - remote_ip_prefix: 172.16.72.111/32
+        protocol: tcp
+        port_range_min: 5432
+        port_range_max: 5432
+      - protocol: tcp
+        remote_ip_prefix: 172.16.73.100/32
+        port_range_min: 5432
+        port_range_max: 5432
+      - protocol: tcp
+        remote_ip_prefix: 172.16.73.101/32
+        port_range_min: 5432
+        port_range_max: 5432
+      - remote_ip_prefix: 172.16.74.120/32
+        protocol: tcp
+        port_range_min: 5432
+        port_range_max: 5432
+      - remote_ip_prefix: 172.16.74.121/32
+        protocol: tcp
+        port_range_min: 5432
+        port_range_max: 5432
+      - remote_ip_prefix: 172.16.74.122/32
+        protocol: tcp
+        port_range_min: 5432
+        port_range_max: 5432

@@ -1,0 +1,56 @@
+heat_template_version: queens
+
+parameters:
+  config_data:
+    type: json
+    default: {}
+
+resources:
+
+  cloudforms:
+    type: OS::Keystone::Project
+    properties:
+      description: { get_param: [ config_data, keystone_project_description ] }
+      domain: { get_param: [ config_data, keystone_domain ] }
+      enabled: true
+      name: { get_param: [ config_data, keystone_project_name ] }
+
+  admin_assignment:
+    type: OS::Keystone::UserRoleAssignment
+    depends_on: cloudforms
+    properties:
+      user: { get_param: [ config_data, operator_id ] }
+      roles:
+        - project: { get_resource: cloudforms }
+          role: { get_param: [ config_data, tenant_role_id ]  }
+
+  cloudforms_nova_quota:
+    type: OS::Nova::Quota
+    properties:
+      project: { get_resource: cloudforms }
+      injected_files: { get_param: [ config_data, q_nova_injected_files ] }
+      instances: { get_param: [ config_data, q_nova_instances ] }
+      metadata_items: { get_param: [ config_data, q_nova_metadata_items ] }
+      key_pairs: { get_param: [ config_data, q_nova_key_pairs ] }
+      ram: { get_param: [ config_data, q_nova_ram ] }
+      cores: { get_param: [ config_data, q_nova_cores ] }
+
+  cloudforms_cinder_quota:
+    type: OS::Cinder::Quota
+    properties:
+      project: { get_resource: cloudforms }
+      volumes: { get_param: [ config_data, q_cinder_volumes ] }
+      snapshots: { get_param: [ config_data, q_cinder_snapshots ] }
+      gigabytes: { get_param: [ config_data, q_cinder_gigabytes ] }
+
+  cloudforms_neutron_quota:
+    type: OS::Neutron::Quota
+    properties:
+      project: { get_resource: cloudforms }
+      network: { get_param: [ config_data, q_neutron_network ] }
+      security_group_rule: { get_param: [ config_data, q_neutron_security_group_rule ] }
+      security_group: { get_param: [ config_data, q_neutron_security_group ] }
+      floatingip: { get_param: [ config_data, q_neutron_floatingip ] }
+      subnet: { get_param: [ config_data, q_neutron_subnet ] }
+      port: { get_param: [ config_data, q_neutron_port ] }
+      router: { get_param: [ config_data, q_neutron_router ] }

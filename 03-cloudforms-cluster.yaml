@@ -1,0 +1,125 @@
+heat_template_version: queens
+
+parameters:
+  config_data:
+    type: json
+    default: {}
+  stack_bridge:
+    type: json
+    default: {}
+  ipa_enrollment:
+    type: json
+    default: {}
+
+resources:
+  # Create the cloudforms appliance hw types
+  flavors:
+    type: OS::Heat::Stack
+    properties:
+      parameters:
+      template: { get_file: 'https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/master/nested/cfme-flavors.yaml' }
+
+  # Configure cluster networking
+  networks:
+    type: OS::Heat::Stack
+    properties:
+      parameters:
+      template: { get_file: 'https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/master/nested/cfme-networks.yaml' }
+
+  # Request access to the undercloud provisioning network
+  # This is requried for the worker nodes to enroll the OSP director
+  networks-rbac:
+    type: OS::Heat::Stack                              
+    properties:
+      parameters:
+      template: { get_file: 'https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/master/nested/cfme-networks-rbac.yaml' }
+
+  # Generate the server keypair
+  keypairs:
+    type: OS::Heat::Stack
+    properties:
+      parameters:
+      template: { get_file: 'https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/master/nested/cfme-keypair.yaml' }
+
+  # Generate the hypervisor affinity policy
+  affinity:
+    type: OS::Heat::Stack
+    properties:
+      parameters:
+      template: { get_file: 'https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/master/nested/cfme-affinity-policy.yaml' }
+
+  # Generate the cluster security groups
+  security:
+    type: OS::Heat::Stack
+    properties:
+      parameters:
+      template: { get_file: 'https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/master/nested/cfme-security.yaml' }
+
+  # Generate the cluster security groups
+  loadbalancer:
+    type: OS::Heat::Stack
+    properties:
+      parameters:
+      template: { get_file: 'https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/master/nested/cfme-loadbalancer.yaml' }
+
+  # Stand up instances
+  servers:
+     type: OS::Heat::Stack 
+     depends_on: networks
+     properties:
+       template: { get_file: 'https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/master/nested/cfme-servers.yaml' }
+       parameters:
+         stack_bridge:         
+           bastion-network:
+             get_attr: [ networks, outputs, bastion-network ]
+           bastion-subnet:
+             get_attr: [ networks, outputs, bastion-subnet ]
+           portal-network:
+             get_attr: [ networks, outputs, portal-network ]
+           portal-subnet:
+             get_attr: [ networks, outputs, portal-subnet ]
+           database-network:
+             get_attr: [ networks, outputs, database-network ]
+           database-subnet:
+             get_attr: [ networks, outputs, database-subnet ]
+           worker-network:
+             get_attr: [ networks, outputs, worker-network ]
+           worker-subnet:
+             get_attr: [ networks, outputs, worker-subnet ]
+           cf_portal_flavor_id:
+             get_attr: [ flavors, outputs, cf_portal_flavor_id ]
+           cf_database_flavor_id:
+             get_attr: [ flavors, outputs, cf_database_flavor_id ]
+           cf_worker_flavor_id:
+             get_attr: [ flavors, outputs, cf_worker_flavor_id ]
+           cloudforms_keypair:
+             get_attr: [ keypairs, outputs, cloudforms-server-key, name ]
+           portal_affinity_policy:
+             get_attr: [ affinity, outputs, portal_affinity_policy ]
+           database_affinity_policy:
+             get_attr: [ affinity, outputs, database_affinity_policy ]
+           worker_affinity_policy:
+             get_attr: [ affinity, outputs, worker_affinity_policy ]
+           common_secgroup:
+             get_attr: [ security, outputs, common_secgroup ]
+           bastion_secgroup:
+             get_attr: [ security, outputs, bastion_secgroup ]
+           portal_secgroup:
+             get_attr: [ security, outputs, portal_secgroup ]
+           database_secgroup:
+             get_attr: [ security, outputs, database_secgroup ]
+           worker_secgroup:
+             get_attr: [ security, outputs, worker_secgroup ]
+           portal_lb:
+             get_attr: [ loadbalancer, outputs, portal_lb ]
+           portal_lb_listener_http:
+             get_attr: [ loadbalancer, outputs, portal_lb_listener_http ]
+           portal_lb_listener_https:
+             get_attr: [ loadbalancer, outputs, portal_lb_listener_https ]
+           portal_lb_pool_http:
+             get_attr: [ loadbalancer, outputs, portal_lb_pool_http ]
+           portal_lb_pool_https:
+             get_attr: [ loadbalancer, outputs, portal_lb_pool_https ]
+           
+outputs:
+
