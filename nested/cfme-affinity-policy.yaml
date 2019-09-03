@@ -1,0 +1,46 @@
+heat_template_version: queens
+
+parameters:
+  config_data:
+    type: json
+    default: {}
+
+resources:
+
+  ### define the cloudforms node placement policy
+  
+  portal_affinity_policy:
+    type: OS::Nova::ServerGroup
+    properties:
+      name: portal-anti-affinity
+      policies:
+        - soft-anti-affinity
+
+  database_affinity_policy:
+    type: OS::Nova::ServerGroup
+    properties:
+      name: database-anti-affinity
+      policies:
+        - soft-anti-affinity
+
+  worker_affinity_policy:
+    type: OS::Nova::ServerGroup
+    properties:
+      name: worker-anti-affinity
+      policies:
+        - soft-anti-affinity
+
+outputs:
+
+  portal_affinity_policy:
+    value:
+      get_attr: [ portal_affinity_policy, show, id ]
+
+  database_affinity_policy:
+    value:
+      get_attr: [ database_affinity_policy, show, id ]
+
+  worker_affinity_policy:
+    value:
+      get_attr: [ worker_affinity_policy, show, id ]
+      
