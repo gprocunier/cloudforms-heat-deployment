@@ -1,0 +1,62 @@
+---
+- name: configure cfme appliance
+  hosts: localhost
+  connection: local
+  tasks:      
+    - name: initialize primary database
+      become: true
+      shell:
+        cmd: |
+           . /root/.bash_profile
+           /opt/rh/cfme-gemset/bin/appliance_console_cli -k -S -r 1 -p "{{ dbPassword }}" -b /dev/vdb --replication=primary --primary-host=172.16.73.100 --auto-failover --cluster-node-number=1 || exit 1
+      register: init_primary_db
+      failed_when: init_primary_db.rc > 0
+      when: cfme_node_type == 'primary-db'
+    - name: wait for primary database to come up
+      become: true
+      shell:
+        cmd: |
+           . /root/.bash_profile
+           /opt/rh/cfme-gemset/bin/appliance_console_cli --fetch-key=172.16.73.100 --sshlogin=root --sshpassword=smartvm || exit 1
+      register: fetch_key
+      until: fetch_key.rc == 0
+      retries: 30
+      delay: 10
+      ignore_errors: yes
+      when: cfme_node_type != 'primary-db'
+    - name: initialize secondary database
+      become: true
+      shell:
+        cmd: |
+           . /root/.bash_profile
+           /opt/rh/cfme-gemset/bin/appliance_console_cli -K 172.16.73.100 -s root -a smartvm --replication=standby --primary-host=172.16.73.100 --standby-host=172.16.73.101 --cluster-node-number=2 --auto-failover -U root -p "{{ dbPassword }}" -b /dev/vdb || exit 1
+      register: init_secondary_db
+      failed_when: init_secondary_db.rc > 0
+      when: cfme_node_type == 'secondary-db'
+    - name: initialize primary web-portal
+      become: true
+      shell:
+        cmd: |
+           . /root/.bash_profile
+           appliance_console_cli -K 172.16.73.100 -s root -a smartvm -r 1 -U root -p "{{ dbPassword }}" -l /dev/vdb -h 172.16.73.100 || exit 1
+      register: init_primary_web
+      failed_when: init_primary_web.rc > 0
+      when: cfme_node_type == 'primary-web'
+    - name: initialize tertiary web-portal
+      become: true
+      shell:
+        cmd: |
+           . /root/.bash_profile
+           /opt/rh/cfme-gemset/bin/appliance_console_cli -K 172.16.73.100 -s root -a smartvm -h 172.16.73.100 -U root -p "{{ dbPassword }}" -l /dev/vdb || exit 1
+      register: init_tertiary_web
+      failed_when: init_tertiary_web.rc > 0
+      when: cfme_node_type == 'tertiary-web'
+    - name: initialize tertiary worker
+      become: true
+      shell:
+        cmd: |
+           . /root/.bash_profile
+           /opt/rh/cfme-gemset/bin/appliance_console_cli -K 172.16.73.100 -s root -a smartvm -h 172.16.73.100 -U root -p "{{ dbPassword }}" -l /dev/vdb -t /dev/vdc || exit 1
+      register: init_tertiary_worker
+      failed_when: init_tertiary_worker.rc > 0
+      when: cfme_node_type == 'tertiary-worker'
