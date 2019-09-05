@@ -20,7 +20,23 @@
                          --force-join \
                          --unattended ___IPA_PRINCIPAL___
 
+# Required for OS::Heat::SoftwareDeployment
+/usr/bin/subscription-manager repos --enable=rhel-7-server-openstack-13-rpms
+/bin/yum -y install \
+  os-collect-config \
+  os-refresh-config \
+  os-apply-config \
+  python-heat-agent \
+  python-heat-agent-ansible \
+  python-heat-agent-apply-config \
+  python-heat-agent-hiera \
+  python-heat-agent-json-file \
+  python-heat-agent-puppet \
+  python2-zaqarclient \
+  python2-oslo-log
 
+systemctl enable os-collect-config
+systemctl start --no-block os-collect-config
 ### Role Specific steps
 
 NODETYPE="___ROLE___"
@@ -29,6 +45,7 @@ case "$NODETYPE" in
 
   bastion)
     echo "Configuring node as type: bastion"
+    /bin/yum -y install ansible
     ;;
   database)
     echo "Configuring node as type: database"
