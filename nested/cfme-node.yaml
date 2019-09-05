@@ -18,7 +18,10 @@ conditions:
     equals: [ { get_param: [ node_bridge, extra_nic ] } , True ]
   use_otp:
     equals: [ { get_param: [ ipa_enrollment, { get_param: [ node_bridge, guest_name ] }, name ] }, { get_param: [ node_bridge, guest_name ] } ]
-
+  ssa_host:
+    equals: [ { get_param: [ node_bridge, ssa_host ] }, True ]
+  cfme_node:
+    equals: [ { get_param: [ node_bridge, cfme_node ] }, True ]
 
 resources:
 
@@ -54,6 +57,9 @@ resources:
     type: OS::Heat::SoftwareConfig
     properties:
       group: ungrouped
+      inputs:
+      outputs:
+        - name: node-registration-result
       config:
         str_replace:
           template:
@@ -88,11 +94,47 @@ resources:
             ___ROLE___:
               get_param: [ node_bridge, node_type ]
 
+  roleconfig:
+    type: OS::Heat::SoftwareConfig
+    depends_on:
+      - nodeconfig
+    condition: cfme_node
+    properties:
+      group: ansible
+      inputs:
+        - name: cfme_node_type
+        - name: dbPassword
+      outputs:
+        - name: result
+      config:
+        str_replace:
+          template:
+            get_param: [ node_bridge, roleconfig ]
+          params:
+            herp: derp
+
+  roledeployment:
+    type: OS::Heat::SoftwareDeployment
+    condition: cfme_node
+    properties:
+      config:
+        get_resource: roleconfig
+      server:
+        get_resource: my_instance
+      input_values:
+        cfme_node_type:
+          get_param: [ config_data, node_map, { get_param: [ node_bridge, guest_name ] }, type ]
+        dbPassword:
+          get_param: [ node_bridge, database_password ]
+      actions:
+        - CREATE
+
   mimepayload:
     type: OS::Heat::MultipartMime
     properties:
       parts:
-        - config: { get_resource: nodeconfig }
+        - config:
+            get_resource: nodeconfig
 
   my_instance:
     type: OS::Nova::Server
@@ -140,6 +182,22 @@ resources:
           volsize:
             get_param: [ node_bridge, volsize ]
 
+  ssa_disk:
+    type: OS::Heat::ResourceGroup
+    depends_on:
+      - my_instance
+      - volumes
+    condition: ssa_host
+    properties:
+      count: 1
+      resource_def:
+        type:
+          get_param: [ config_data, heat_cfme_volumes ]
+        properties:
+          instance_id:
+            get_resource: my_instance
+          volsize: 1024
+
   lb:
     type: OS::Heat::ResourceGroup
     depends_on: my_instance
@@ -174,3 +232,23 @@ outputs:
   nodeconfig:
     value:
       get_attr: [ nodeconfig, show ]
+
+  roledeployment:
+    condition: cfme_node
+    value:
+      get_attr: [ roledeployment, show ]
+
+  roledeployment_stdout:
+    condition: cfme_node
+    value:
+      get_attr: [ roledeployment, deploy_stdout ]
+
+  roledeployment_stderr:
+    condition: cfme_node
+    value:
+      get_attr: [ roledeployment, deploy_stderr ]
+
+  roledeployment_rc:
+    condition: cfme_node
+    value:
+      get_attr: [ roledeployment, deploy_status_code ]
