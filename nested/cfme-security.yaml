@@ -38,7 +38,9 @@ resources:
       description: Cloudforms Database ACLs
       name: cfme-database-net-security
       rules:
-        get_param: [ config_data, common_security_group ]
+        list_concat:
+          - { get_param: [ config_data, common_security_group ] }
+          - { get_param: [ config_data, database_security_group ] }
 
   # allow web and common flows
   portal_secgroup:
