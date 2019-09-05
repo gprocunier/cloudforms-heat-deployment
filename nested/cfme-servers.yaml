@@ -15,6 +15,11 @@ parameters:
 
 resources:
 
+  cfme_db_password:
+    type: OS::Heat::RandomString
+    properties:
+      length: 16
+      
   bastion:
     type: OS::Heat::ResourceGroup
     properties:
@@ -46,7 +51,7 @@ resources:
             server_group:
               get_param: [ stack_bridge, database_affinity_policy ]
             cloudinit:
-              get_file: "https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/master/cloud-init/node-configuration.sh"
+              get_file: "https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/raw/master/cloud-init/node-configuration.sh"
             volnum: 0
             lbnum: 0
             extra_nic: False
@@ -62,6 +67,8 @@ resources:
         properties:
           node_bridge:
             node_type: database
+            database_password:
+              get_resource: cfme_db_password
             guest_name: "cfme-database-%index%.idm.example.com"
             key_name:
               get_param: [ stack_bridge, cloudforms_keypair ]
@@ -82,12 +89,15 @@ resources:
             server_group:
               get_param: [ stack_bridge, database_affinity_policy ]
             cloudinit:
-              get_file: "https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/master/cloud-init/node-configuration.sh"
+              get_file: "https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/raw/master/cloud-init/node-configuration.sh"
             volnum: 1
             volsize:
               get_param: [ config_data, database_data_vol_size ]
             lbnum: 0
             extra_nic: False
+            cfme_node: True
+            roleconfig:
+              get_file: "https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/raw/master/ansible/role-configuration.yaml"
 
 
   portal:
@@ -101,6 +111,8 @@ resources:
         properties:
           node_bridge:
             node_type: portal
+            database_password:
+              get_resource: cfme_db_password
             guest_name: "cfme-portal-%index%.idm.example.com"
             key_name:
               get_param: [ stack_bridge, cloudforms_keypair ]
@@ -121,7 +133,7 @@ resources:
             server_group:
               get_param: [ stack_bridge, portal_affinity_policy ]
             cloudinit:
-              get_file: "https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/master/cloud-init/node-configuration.sh"
+              get_file: "https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/raw/master/cloud-init/node-configuration.sh"
             volnum: 1
             volsize:
               get_param: [ config_data, portal_data_vol_size ]
@@ -131,6 +143,9 @@ resources:
             https_pool:
               get_param: [ stack_bridge, portal_lb_pool_https ]
             extra_nic: False
+            cfme_node: True
+            roleconfig:
+              get_file: "https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/raw/master/ansible/role-configuration.yaml"
 
   worker:
     type: OS::Heat::ResourceGroup
@@ -143,6 +158,8 @@ resources:
         properties:
           node_bridge:          
             node_type: worker
+            database_password:
+              get_resource: cfme_db_password
             guest_name: "cfme-worker-%index%.idm.example.com"
             key_name:
               get_param: [ stack_bridge, cloudforms_keypair ]
@@ -163,12 +180,19 @@ resources:
             server_group:
               get_param: [ stack_bridge, worker_affinity_policy ]
             cloudinit:
-              get_file: "https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/master/cloud-init/node-configuration.sh"
+              get_file: "https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/raw/master/cloud-init/node-configuration.sh"
             volnum: 1
             lbnum: 0
             volsize:
               get_param: [ config_data, worker_data_vol_size ]
+            ssa_host: True
             extra_nic: True
-
+            cfme_node: True
+            roleconfig:
+              get_file: "https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/raw/master/ansible/role-configuration.yaml"
+              
 outputs:
 
+  cfme_db_password:
+    value:
+      get_attr: [ cfme_db_password, show ]
