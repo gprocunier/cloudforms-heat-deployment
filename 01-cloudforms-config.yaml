@@ -44,7 +44,31 @@ parameter_defaults:
     cfme_database_count: 2
     cfme_portal_count: 2
     cfme_worker_count: 3
-
+    
+    ### Node Map
+    node_map:
+      cfme-database-0.idm.example.com:
+        name: cfme-database-0.idm.example.com
+        type: primary-db
+      cfme-database-1.idm.example.com:
+        name: cfme-database-1.idm.example.com
+        type: secondary-db
+      cfme-portal-0.idm.example.com:
+        name: cfme-portal-0.idm.example.com
+        type: primary-web
+      cfme-portal-1.idm.example.com:
+        name: cfme-portal-0.idm.example.com
+        type: tertiary-web
+      cfme-worker-0.idm.example.com:
+        name: cfme-worker-0.idm.example.com
+        type: tertiary-worker
+      cfme-worker-1.idm.example.com:
+        name: cfme-worker-1.idm.example.com
+        type: tertiary-worker
+      cfme-worker-2.idm.example.com:
+        name: cfme-worker-2.idm.example.com
+        type: tertiary-worker
+        
     ### Bastion Host and Network
     bastion_cidr: 172.16.71.0/24
     bastion_gw: 172.16.71.1
