@@ -55,7 +55,7 @@ resources:
       parameters:
       template: { get_file: 'https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/raw/master/nested/cfme-security.yaml' }
 
-  # Generate the cluster security groups
+  # Generate the cluster loadbalancer
   loadbalancer:
     type: OS::Heat::Stack
     properties:

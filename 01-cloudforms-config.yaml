@@ -9,7 +9,7 @@ parameter_defaults:
     ### RHSM - We use Satellite to provide entitlement and content
     rhsm_org: 'ExampleOrg'
     rhsm_activationkey: 'EXAMPLE-KEY'
-    rhsm_url: 'https://satellite.idm.example.com/pub/katello-ca-consumer-latest.noarch.rpm'
+    rhsm_url: 'https://satellite6.idm.example.com/pub/katello-ca-consumer-latest.noarch.rpm'
 
     ### Red Hat IDM - We use IDM/FreeIPA to publish DNS and enable user access in the portal
     ipa_dns_domain: 'idm.example.com'
@@ -33,6 +33,14 @@ parameter_defaults:
     # vmdb_password: testpw
     # root_password: testpw
 
+    # This parameter causes the ansible plays that configure the cluster to suppress output.
+    # This will prevent sensitive strings such as root password and db password from being
+    # recorded in syslog but also makes things harder to troubleshoot during provisioning.
+    #
+    # ansible_nolog: True  -- hide debugging messages
+    # ansible_nolog: False -- show debugging
+
+    ansible_nolog: True
 
     ### OpenStack Information - Used to initialize 02-cloudforms-project.yaml
     project_data:
@@ -85,8 +93,8 @@ parameter_defaults:
 
     ### EVM Config and Node Map
     evm_timeZone: 'Eastern Time (US & Canada)'
-    evm_companyName: 'Example.Com'
-    evm_loginText: 'Production Environment'
+    evm_companyName: 'SymRAD'
+    evm_loginText: 'Research and Development Environment'
     evm_smtpDomain: 'example.com'
     evm_smtpFrom: 'cfme-admin@example.com'
     evm_smtpHost: 'smtp.example.com'
