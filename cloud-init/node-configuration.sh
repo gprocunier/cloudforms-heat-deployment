@@ -10,7 +10,14 @@
 echo ___ROOTPW___ | passwd root --stdin
 /usr/bin/curl -k "___KATELLO_URI___" -o /tmp/katello-ca-consumer-latest.noarch.rpm || exit 1
 /usr/bin/rpm -ivh /tmp/katello-ca-consumer-latest.noarch.rpm || exit 1
-/usr/bin/subscription-manager register --org="___RHSM_ORG___" --activationkey="___RHSM_KEY___" --force || exit 1
+
+# occasional satellite registration failures shouldnt tank the whole build
+while [[ $reg_rc -eq 1 ]]
+do
+  /usr/bin/subscription-manager register --org="___RHSM_ORG___" --activationkey="___RHSM_KEY___" --force
+  reg_rc=$?
+done
+
 /bin/yum -y install ipa-client || exit 1
 /sbin/ipa-client-install --domain="___DNS_DOMAIN___" \
                          --realm="___IPA_REALM___" \
