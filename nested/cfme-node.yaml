@@ -133,6 +133,7 @@ resources:
         - name: primaryDb
         - name: portalNode
         - name: secondaryDb
+        - name: debugMode
       outputs:
         - name: result
       config:
@@ -154,6 +155,8 @@ resources:
       server:
         get_resource: my_instance
       input_values:
+        debugMode:
+          get_param: [ config_data, ansible_nolog ]
         cfme_node_type:
           get_param: [ config_data, node_map, { get_param: [ node_bridge, guest_name ] }, type ]
         dbPassword:
@@ -186,6 +189,7 @@ resources:
       inputs:
         - name: timezone
         - name: ntpServers
+        - name: debugMode
       outputs:
         - name: result
       config:
@@ -207,6 +211,8 @@ resources:
       server:
         get_resource: my_instance
       input_values:
+        debugMode:
+          get_param: [ config_data, ansible_nolog ]
         timezone:
           get_param: [ config_data, timezone ]
         ntpServers:
@@ -226,6 +232,7 @@ resources:
       group: ansible
       inputs:
         - name: cfme_node_type
+        - name: debugMode
         - name: primaryDb
         - name: dbPassword
         - name: evm_nodeMap
@@ -262,6 +269,8 @@ resources:
       server:
         get_resource: my_instance
       input_values:
+        debugMode:
+          get_param: [ config_data, ansible_nolog ]
         cfme_node_type:
           get_param: [ config_data, node_map, { get_param: [ node_bridge, guest_name ] }, type ]
         dbPassword:
