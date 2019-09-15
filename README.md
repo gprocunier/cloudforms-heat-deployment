@@ -20,7 +20,13 @@ This project aims to deploy a minimal production like Red Hat Cloudforms cluster
  - Nodes are joined to the IDM domain with a dynamic dns update using the assigned floating IP.
  - The Cloudforms appliance nodes are configured by ansible invoked by Heat.
  - The Cloudforms EVM has a basic configuration / role assignment post deployment
- 
+
+## Assumptions
+
+  - You are running a dark site and using RHN Satellite for node registration with activation key access
+  - You are running an RH IDM server or FreeIPA equivalent and you have domain admin access.
+  - You have access to RHOSP13 content repos
+
 ## The deployment
 
  - 1 Bastion Host
