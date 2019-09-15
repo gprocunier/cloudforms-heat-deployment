@@ -6,12 +6,12 @@ parameter_defaults:
       - 192.168.72.10
       - 192.168.72.11      
 
-    ### RHSM
+    ### RHSM - We use Satellite to provide entitlement and content
     rhsm_org: 'ExampleOrg'
-    rhsm_activationkey: 'ExampleKey'
+    rhsm_activationkey: 'EXAMPLE-KEY'
     rhsm_url: 'https://satellite.idm.example.com/pub/katello-ca-consumer-latest.noarch.rpm'
 
-    ### Red Hat idm
+    ### Red Hat IDM - We use IDM/FreeIPA to publish DNS and enable user access in the portal
     ipa_dns_domain: 'idm.example.com'
     ipa_server: 'directory.idm.example.com'
     ipa_realm: 'IDM.EXAMPLE.COM'
@@ -34,10 +34,32 @@ parameter_defaults:
     # root_password: testpw
 
 
-    ### OpenStack Information
-    keystone_domain: 'EXAMPLE'
-    operator_id: 'admin'
-    tenant_owner_role_id: 'Member'
+    ### OpenStack Information - Used to initialize 02-cloudforms-project.yaml
+    project_data:
+      keystone_domain: 'EXAMPLE'
+      operator_id: 'admin'
+      tenant_role_id: 'Member'
+      # Nova Quotas
+      q_nova_injected_files: 128
+      q_nova_instances: 8
+      q_nova_metadata_items: 128
+      q_nova_key_pairs: 8
+      q_nova_ram: 131072
+      q_nova_cores: 32
+      # Cinder Quotas
+      q_cinder_volumes: 12
+      q_cinder_snapshots: 36
+      q_cinder_gigabytes: 5120
+      # Neutron Quotas
+      q_neutron_network: 32
+      q_neutron_security_group_rule: 50
+      q_neutron_security_group: 32
+      q_neutron_floatingip: 10
+      q_neutron_subnet: 32
+      q_neutron_port: 128
+      q_neutron_router: 16
+
+    ### The cloudforms project ID after deploying 02-cloudforms-project.yaml
     cloudforms_project_id: fa0c3162e53e4f4badc5b447dbafd849
     
     ### General Network Information
