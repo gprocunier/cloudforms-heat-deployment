@@ -17,14 +17,14 @@ resources:
     type: OS::Heat::Stack
     properties:
       parameters:
-      template: { get_file: 'https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/master/nested/cfme-flavors.yaml' }
+      template: { get_file: 'https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/raw/master/nested/cfme-flavors.yaml' }
 
   # Configure cluster networking
   networks:
     type: OS::Heat::Stack
     properties:
       parameters:
-      template: { get_file: 'https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/master/nested/cfme-networks.yaml' }
+      template: { get_file: 'https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/raw/master/nested/cfme-networks.yaml' }
 
   # Request access to the undercloud provisioning network
   # This is requried for the worker nodes to enroll the OSP director
@@ -32,42 +32,42 @@ resources:
     type: OS::Heat::Stack                              
     properties:
       parameters:
-      template: { get_file: 'https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/master/nested/cfme-networks-rbac.yaml' }
+      template: { get_file: 'https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/raw/master/nested/cfme-networks-rbac.yaml' }
 
   # Generate the server keypair
   keypairs:
     type: OS::Heat::Stack
     properties:
       parameters:
-      template: { get_file: 'https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/master/nested/cfme-keypair.yaml' }
+      template: { get_file: 'https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/raw/master/nested/cfme-keypair.yaml' }
 
   # Generate the hypervisor affinity policy
   affinity:
     type: OS::Heat::Stack
     properties:
       parameters:
-      template: { get_file: 'https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/master/nested/cfme-affinity-policy.yaml' }
+      template: { get_file: 'https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/raw/master/nested/cfme-affinity-policy.yaml' }
 
   # Generate the cluster security groups
   security:
     type: OS::Heat::Stack
     properties:
       parameters:
-      template: { get_file: 'https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/master/nested/cfme-security.yaml' }
+      template: { get_file: 'https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/raw/master/nested/cfme-security.yaml' }
 
   # Generate the cluster security groups
   loadbalancer:
     type: OS::Heat::Stack
     properties:
       parameters:
-      template: { get_file: 'https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/master/nested/cfme-loadbalancer.yaml' }
+      template: { get_file: 'https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/raw/master/nested/cfme-loadbalancer.yaml' }
 
   # Stand up instances
   servers:
      type: OS::Heat::Stack 
      depends_on: networks
      properties:
-       template: { get_file: 'https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/master/nested/cfme-servers.yaml' }
+       template: { get_file: 'https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/raw/master/nested/cfme-servers.yaml' }
        parameters:
          stack_bridge:         
            bastion-network:
