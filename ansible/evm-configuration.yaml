@@ -2,6 +2,7 @@
 - name: Configure local EVM settings
   hosts: localhost
   connection: local
+  no_log: "{{ debugMode }}"
   vars:
     ntpServers: "{{ evm_ntpServers }}"
     serverRoles: "{{ evm_nodeMap }}"
@@ -27,7 +28,6 @@
       register: restLogin
       retries: 60
       delay: 10
-      no_log: True
       until: restLogin.status == 200
     - name: Query MIQ servers
       uri:

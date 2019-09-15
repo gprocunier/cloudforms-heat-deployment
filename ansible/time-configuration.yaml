@@ -3,6 +3,7 @@
   hosts: localhost
   connection: local
   gather_facts: no
+  no_log: "{{ debugMode }}"
   vars:
     # Heat sends ntpSerers list as a unicode string.  Cant use that directly but we can
     # initialize a new variable which understands the source format

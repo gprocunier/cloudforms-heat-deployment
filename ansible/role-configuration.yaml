@@ -2,6 +2,7 @@
 - name: configure cfme appliance
   hosts: localhost
   connection: local
+  no_log: "{{ debugMode }}"
   tasks:      
     - name: initialize primary database
       become: true
@@ -15,7 +16,6 @@
              --username root \
              --password="{{ dbPassword }}" \
              --dbdisk /dev/vdb || exit 1
-      no_log: True
       register: init_primary_db
       failed_when: init_primary_db.rc > 0
       when: cfme_node_type == 'primary-db'
@@ -26,7 +26,6 @@
         state: started
         delay: 0
         timeout: 600
-      no_log: True
       when: cfme_node_type != 'primary-db'
     - name: initialize primary web-portal
       become: true
@@ -35,7 +34,6 @@
            . /root/.bash_profile
            appliance_console_cli -K "{{ primaryDb }}" -s root -a {{ rootPassword }} -r 1 -U root -p "{{ dbPassword }}" -l /dev/vdb -h "{{ primaryDb }}" || exit 1
       register: init_primary_web
-      no_log: True
       failed_when: init_primary_web.rc > 0
       when: cfme_node_type == 'primary-web'
     - name: wait for the primary appliance to initialize the region
@@ -48,7 +46,6 @@
       register: test_db
       retries: 60
       delay: 10
-      no_log: True
       until: "test_db.query_result[0].hostname is defined and test_db.query_result[0].hostname == '{{ portalNode }}'"
       when: cfme_node_type != 'primary-web'
     - name: Enable replication on the primary node
@@ -69,7 +66,6 @@
             sleep 1
           done
       register: init_primary_db_rep
-      no_log: True
       failed_when: init_primary_db.rc > 0
       when: cfme_node_type == 'primary-db'
     - name: wait for the primary datbase to enable replication
@@ -80,7 +76,6 @@
         db: vmdb_production
         query: SELECT node_name FROM repmgr.nodes WHERE node_id = '1';
       register: test_db_rep
-      no_log: True
       retries: 60
       delay: 10
       until: "test_db_rep.query_result[0].node_name is defined and test_db_rep.query_result[0].node_name == '{{ primaryDb }}'"
@@ -93,7 +88,6 @@
            /opt/rh/cfme-gemset/bin/appliance_console_cli -K "{{ primaryDb }}" -s root -a {{ rootPassword }} --replication=standby --primary-host="{{ primaryDb }}" --standby-host="{{ secondaryDb }}" --cluster-node-number=2 --auto-failover -U root -p "{{ dbPassword }}" -b /dev/vdb || exit 1
       register: init_secondary_db
       failed_when: init_secondary_db.rc > 0
-      no_log: True
       when: cfme_node_type == 'secondary-db'
     - name: initialize tertiary web-portal
       become: true
@@ -104,7 +98,6 @@
       register: init_tertiary_web
       failed_when: init_tertiary_web.rc > 0
       when: cfme_node_type == 'tertiary-web'
-      no_log: True
     - name: initialize tertiary worker
       become: true
       shell:
@@ -112,6 +105,5 @@
            . /root/.bash_profile
            /opt/rh/cfme-gemset/bin/appliance_console_cli -K "{{ primaryDb }}" -s root -a {{ rootPassword }} -h "{{ primaryDb }}" -U root -p "{{ dbPassword }}" -l /dev/vdb -t /dev/vdc || exit 1
       register: init_tertiary_worker
-      no_log: True
       failed_when: init_tertiary_worker.rc > 0
       when: cfme_node_type == 'tertiary-worker'
