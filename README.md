@@ -16,8 +16,10 @@ This project aims to deploy a minimal production like Red Hat Cloudforms cluster
  - Create and assign anti-affinity policies to nodes to enhance HA
  - Configure Neutron RBAC to allow the worker nodes access to the undercloud network so the director can be enrolled.
  - Instances are enrolled against a local Satellite 6.5 server
+ - Database / Log and Temp volumes will accept custom volume types
  - Nodes are joined to the IDM domain with a dynamic dns update using the assigned floating IP.
  - The Cloudforms appliance nodes are configured by ansible invoked by Heat.
+ - The Cloudforms EVM has a basic configuration / role assignment post deployment
  
 ## The deployment
 
