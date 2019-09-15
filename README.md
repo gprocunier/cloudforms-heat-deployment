@@ -20,7 +20,14 @@ This project aims to deploy a minimal production like Red Hat Cloudforms cluster
  - The Cloudforms appliance nodes are configured by ansible invoked by Heat.
  
 ## The deployment
+
  - 1 Bastion Host
  - 2 Database Nodes (Active/Passive DB replication with auto failover)
  - 2 Web Portals (Fronted by an Octavia Loadbalancer)
  - 3 Workers (Access to the Undercloud for Director Infra Enrollment and 1TB temp space to facilitate guest smart state analysis)
+
+## Requirements
+
+  1. Download 01-cloudforms-config.yaml and 02-cloudforms-project.yaml and modify to your environment
+  2. openstack stack create -e 01-cloudforms-config.yaml -t 02-cloudforms-project.yaml cloudforms-project --wait
+  3. Download contrib/build.sh and contrib/ipa_enrollment.pl
