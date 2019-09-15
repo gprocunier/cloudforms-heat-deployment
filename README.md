@@ -30,4 +30,6 @@ This project aims to deploy a minimal production like Red Hat Cloudforms cluster
 
   1. Download 01-cloudforms-config.yaml and 02-cloudforms-project.yaml and modify to your environment
   2. openstack stack create -e 01-cloudforms-config.yaml -t 02-cloudforms-project.yaml cloudforms-project --wait
-  3. Download contrib/build.sh and contrib/ipa_enrollment.pl
+  3. Copy a user-openrc.sh from your overcloud.  This user should have cloud operator rights.
+  4. Download contrib/build.sh and contrib/ipa_enrollment.pl and modify to your environment.
+  4. run ./build.sh
