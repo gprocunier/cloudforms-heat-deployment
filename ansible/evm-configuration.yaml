@@ -27,6 +27,7 @@
       register: restLogin
       retries: 60
       delay: 10
+      no_log: True
       until: restLogin.status == 200
     - name: Query MIQ servers
       uri:
@@ -69,33 +70,3 @@
             domain: "{{ evm_smtpDomain }}"
             from: "{{ evm_smtpFrom | default('nobody@example.com') }}"
             host: "{{ evm_smtpHost | default('localhost') }}"
-    #  with_items:
-    #    - "{{ miqServers.json.resources }}"
-    # - name: wait for all nodes to join the region then set roles
-    #   postgresql_query:
-    #     login_host: "{{ primaryDb }}"
-    #     login_password: "{{ dbPassword }}"
-    #     login_user: root
-    #     db: vmdb_production
-    #     query: SELECT COUNT(hostname) FROM miq_servers;
-    #   register: miqcount
-    #   retries: 10
-    #   delay: 60
-    #   until: "miqcount.query_result[0].count is defined and miqcount.query_result[0].count == {{ evm_nodeCount }}"
-    #   when: cfme_node_type == 'primary-web'
-    # - name: Update EVM global params and cluster roles
-    #   uri:
-    #     url: https://localhost/api/servers/{{ item.id }}/settings
-    #     method: PATCH
-    #     headers:
-    #       X-Auth-Token: "{{ restLogin.json.auth_token }}"
-    #     validate_certs: no
-    #     status_code: 200
-    #     body_type: json
-    #     body_format: json
-    #     body:
-    #       server:
-    #         role: "{{ serverRoles[item.hostname].roles | join(',') }}"
-    #   with_items:
-    #     - "{{ miqServers.json.resources }}"
-    #   when: cfme_node_type == 'primary-web'
