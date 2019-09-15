@@ -1,0 +1,101 @@
+---
+- name: Configure local EVM settings
+  hosts: localhost
+  connection: local
+  vars:
+    ntpServers: "{{ evm_ntpServers }}"
+    serverRoles: "{{ evm_nodeMap }}"
+  tasks:
+    - name: wait for web service to start
+      wait_for:
+        host: localhost
+        port: 443
+        state: started
+        delay: 0
+        timeout: 600
+    - name: authenticate and request token
+      uri:
+        url: https://localhost/api/auth
+        method: GET
+        force_basic_auth: yes
+        validate_certs: no
+        status_code: 200
+        body_type: json
+        body_format: json
+        user: "{{ miqUser | default('admin') }}"
+        password: "{{ miqPass | default('smartvm') }}"
+      register: restLogin
+      retries: 60
+      delay: 10
+      until: restLogin.status == 200
+    - name: Query MIQ servers
+      uri:
+        url: https://localhost/api/servers?expand=resources
+        method: GET
+        headers:
+          X-Auth-Token: "{{ restLogin.json.auth_token }}"
+        validate_certs: no
+        status_code: 200
+      register: miqServers
+    - set_fact:
+        serverID: "{{ serverID | default({}) | combine( { item.hostname: item.id } ) }}"
+      with_items:
+        - "{{ miqServers.json.resources }}"
+    - name: Update EVM local appliance params
+      uri:
+        url: https://localhost/api/servers/{{ serverID[ansible_fqdn] }}/settings
+        method: PATCH
+        headers:
+          X-Auth-Token: "{{ restLogin.json.auth_token }}"
+        validate_certs: no
+        status_code: 200
+        body_type: json
+        body_format: json
+        body:
+          server:
+            name: "{{ ansible_hostname }}"
+            company: "{{ evm_companyName }}"
+            timezone: "{{ evm_timeZone }}"
+            custom_login_text: "{{ evm_loginText | default('Mention Environment here thanks!') }}"
+            use_custom_login_text: true
+            custom_login_logo: false
+            role: "{{ serverRoles[ansible_fqdn].roles | join(',') }}"
+          authentication:
+            mode: "httpd"
+            httpd_role: true
+          ntp:
+            server: "{{ ntpServers }}"
+          smtp:
+            domain: "{{ evm_smtpDomain }}"
+            from: "{{ evm_smtpFrom | default('nobody@example.com') }}"
+            host: "{{ evm_smtpHost | default('localhost') }}"
+    #  with_items:
+    #    - "{{ miqServers.json.resources }}"
+    # - name: wait for all nodes to join the region then set roles
+    #   postgresql_query:
+    #     login_host: "{{ primaryDb }}"
+    #     login_password: "{{ dbPassword }}"
+    #     login_user: root
+    #     db: vmdb_production
+    #     query: SELECT COUNT(hostname) FROM miq_servers;
+    #   register: miqcount
+    #   retries: 10
+    #   delay: 60
+    #   until: "miqcount.query_result[0].count is defined and miqcount.query_result[0].count == {{ evm_nodeCount }}"
+    #   when: cfme_node_type == 'primary-web'
+    # - name: Update EVM global params and cluster roles
+    #   uri:
+    #     url: https://localhost/api/servers/{{ item.id }}/settings
+    #     method: PATCH
+    #     headers:
+    #       X-Auth-Token: "{{ restLogin.json.auth_token }}"
+    #     validate_certs: no
+    #     status_code: 200
+    #     body_type: json
+    #     body_format: json
+    #     body:
+    #       server:
+    #         role: "{{ serverRoles[item.hostname].roles | join(',') }}"
+    #   with_items:
+    #     - "{{ miqServers.json.resources }}"
+    #   when: cfme_node_type == 'primary-web'
