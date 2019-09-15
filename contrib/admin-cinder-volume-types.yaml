@@ -1,0 +1,106 @@
+heat_template_version: queens
+
+description: >
+  Initialize the following Volume Types and QoS specs
+
+  Values are total aggregate:
+
+  tripleo  =  125MB/s throughput +  125 IOPS  (default voltype)
+  bronze   =  250MB/s throughput +  250 IOPS 
+  silver   =  500MB/s throughput +  500 IOPS
+  gold     = 1000MB/s throughput + 1000 IOPS
+  platinum = 2000MB/s throughput + 2000 IOPS
+  
+resources:
+
+  vqos-base:
+    type: OS::Cinder::QoSSpecs
+    properties:
+      name: vqos-base
+      specs:
+        "consumer": "front-end"
+        "total_bytes_sec": "131072000"
+        "total_iops_sec": "125"
+
+  vqos-bronze:
+    type: OS::Cinder::QoSSpecs
+    properties:
+      name: vqos-bronze
+      specs:
+        "consumer": "front-end"
+        "total_bytes_sec": "262144000"
+        "total_iops_sec": "250"
+
+  vqos-silver:
+    type: OS::Cinder::QoSSpecs
+    properties:
+      name: vqos-silver
+      specs:
+        "consumer": "front-end"
+        "total_bytes_sec": "524288000"
+        "total_iops_sec": "500"
+
+  vqos-gold:
+    type: OS::Cinder::QoSSpecs
+    properties:
+      name: vqos-gold
+      specs:
+        "consumer": "front-end"
+        "total_bytes_sec": "1048576000"
+        "total_iops_sec": "1000"
+
+  vqos-platinum:
+    type: OS::Cinder::QoSSpecs
+    properties:
+      name: vqos-platinum
+      specs:
+        "consumer": "front-end"
+        "total_bytes_sec": "2097152000"
+        "total_iops_sec": "2000"
+
+  volume-platinum:
+    type: OS::Cinder::VolumeType
+    properties:
+      name: platinum
+      description: '2000 IOPS 2000MBs'
+      is_public: true
+
+  qos-attach-tripleo:
+    type: OS::Cinder::QoSAssociation
+    properties:
+      qos_specs:
+        get_resource: vqos-base
+      volume_types:
+        - tripleo
+
+  qos-attach-bronze:
+    type: OS::Cinder::QoSAssociation
+    properties:
+      qos_specs:
+        get_resource: vqos-bronze
+      volume_types:
+        - { get_resource: volume-bronze }
+
+  qos-attach-silver:
+    type: OS::Cinder::QoSAssociation
+    properties:
+      qos_specs:
+        get_resource: vqos-silver
+      volume_types:
+        - { get_resource: volume-silver } 
+
+  qos-attach-gold:
+    type: OS::Cinder::QoSAssociation
+    properties:
+      qos_specs:
+        get_resource: vqos-gold
+      volume_types:
+        - { get_resource: volume-gold } 
+
+  qos-attach-platinum:
+    type: OS::Cinder::QoSAssociation
+    properties:
+      qos_specs:
+        get_resource: vqos-platinum
+      volume_types:
+        - { get_resource: volume-platinum } 
