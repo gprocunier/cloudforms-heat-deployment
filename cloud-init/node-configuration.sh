@@ -2,10 +2,12 @@
 # apply first boot configuration to the hosts (greg.procunier@gmail.com)
 # 
 # v2 handle otp by  ___IPA_PRINCIPAL___ will being set based on heat
+# v3 set root password from OS::Heat::Randomstring
 
 
 ### Common init steps
 /usr/bin/hostnamectl set-hostname ___FQDN___ || exit 1
+echo ___ROOTPW___ | passwd root --stdin
 /usr/bin/curl -k "___KATELLO_URI___" -o /tmp/katello-ca-consumer-latest.noarch.rpm || exit 1
 /usr/bin/rpm -ivh /tmp/katello-ca-consumer-latest.noarch.rpm || exit 1
 /usr/bin/subscription-manager register --org="___RHSM_ORG___" --activationkey="___RHSM_KEY___" --force || exit 1
@@ -20,7 +22,7 @@
                          --force-join \
                          --unattended ___IPA_PRINCIPAL___
 
-# Required for OS::Heat::SoftwareDeployment
+# Required for OS::Heat::SoftwareDeployment / Ansible postgres_query
 /usr/bin/subscription-manager repos --enable=rhel-7-server-openstack-13-rpms
 /bin/yum -y install \
   os-collect-config \
@@ -33,7 +35,8 @@
   python-heat-agent-json-file \
   python-heat-agent-puppet \
   python2-zaqarclient \
-  python2-oslo-log
+  python-psycopg2
+
 
 systemctl enable os-collect-config
 systemctl start --no-block os-collect-config
