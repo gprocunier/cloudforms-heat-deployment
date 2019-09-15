@@ -10,6 +10,7 @@
 echo ___ROOTPW___ | passwd root --stdin
 /usr/bin/curl -k "___KATELLO_URI___" -o /tmp/katello-ca-consumer-latest.noarch.rpm || exit 1
 /usr/bin/rpm -ivh /tmp/katello-ca-consumer-latest.noarch.rpm || exit 1
+reg_rc=1
 
 # occasional satellite registration failures shouldnt tank the whole build
 while [[ $reg_rc -eq 1 ]]
