@@ -43,4 +43,3 @@ outputs:
   worker_affinity_policy:
     value:
       get_attr: [ worker_affinity_policy, show, id ]
-      

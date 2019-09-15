@@ -9,7 +9,9 @@ parameters:
 
   instance_id:
     type: string
-
+  voltype:
+    type: string
+    
 resources:
 
   volume:
@@ -18,6 +20,8 @@ resources:
       size:
         get_param: volsize
       description: "cfme data disk"
+      volume_type:
+        get_param: voltype
 
   attachment:
     type: OS::Cinder::VolumeAttachment

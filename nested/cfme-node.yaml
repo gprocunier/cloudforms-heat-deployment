@@ -22,6 +22,21 @@ conditions:
     equals: [ { get_param: [ node_bridge, ssa_host ] }, True ]
   cfme_node:
     equals: [ { get_param: [ node_bridge, cfme_node ] }, True ]
+  norootpw:
+    equals: [ { get_param: [ config_data, root_password ] }, '' ]
+  novmdbpw:
+    equals: [ { get_param: [ config_data, vmdb_password ] }, '' ]
+  cfme_database:
+    and:
+      - equals: [ { get_param: [ config_data, node_map, { get_param: [ node_bridge, guest_name ] }, type ] }, 'primary-db' ]
+      - equals: [ { get_param: [ config_data, node_map, { get_param: [ node_bridge, guest_name ] }, type ] }, 'secondary-db' ]
+  has_voltype:
+    not:
+      equals: [ { get_param: [ node_bridge, voltype ] }, '' ]
+  has_ssa_voltype:
+    not:
+      equals: [ { get_param: [ node_bridge, ssa_voltype ] }, '' ]
+
 
 resources:
 
@@ -73,6 +88,11 @@ resources:
               get_param: [ config_data, rhsm_org ]
             ___RHSM_KEY___:
               get_param: [ config_data, rhsm_activationkey ]
+            ___ROOTPW___:
+              if:
+                - "norootpw"
+                - { get_param: [ node_bridge, root_password ] }
+                - { get_param: [ config_data, root_password ] }
             ___DNS_DOMAIN___:
               get_param: [ config_data, ipa_dns_domain ]
             ___IPA_SERVER___:
@@ -94,16 +114,25 @@ resources:
             ___ROLE___:
               get_param: [ node_bridge, node_type ]
 
+  mimepayload:
+    type: OS::Heat::MultipartMime
+    properties:
+      parts:
+        - config:
+            get_resource: nodeconfig
+
   roleconfig:
     type: OS::Heat::SoftwareConfig
-    depends_on:
-      - nodeconfig
     condition: cfme_node
     properties:
       group: ansible
       inputs:
         - name: cfme_node_type
         - name: dbPassword
+        - name: rootPassword
+        - name: primaryDb
+        - name: portalNode
+        - name: secondaryDb
       outputs:
         - name: result
       config:
@@ -112,11 +141,14 @@ resources:
             get_param: [ node_bridge, roleconfig ]
           params:
             herp: derp
-
+   
   roledeployment:
     type: OS::Heat::SoftwareDeployment
     condition: cfme_node
+    depends_on:
+      - timedeployment
     properties:
+      name: 02_roledeploy
       config:
         get_resource: roleconfig
       server:
@@ -125,16 +157,149 @@ resources:
         cfme_node_type:
           get_param: [ config_data, node_map, { get_param: [ node_bridge, guest_name ] }, type ]
         dbPassword:
-          get_param: [ node_bridge, database_password ]
+          if:
+            - "novmdbpw"
+            - { get_param: [ node_bridge, database_password ] }
+            - { get_param: [ config_data, vmdb_password ] }
+        rootPassword:
+          if:
+            - "norootpw"
+            - { get_param: [ node_bridge, root_password ] }
+            - { get_param: [ config_data, root_password ] }
+        primaryDb:
+          get_param: [ config_data, database_internal_pool, 0 ]
+        secondaryDb:
+          get_param: [ config_data, database_internal_pool, 1 ]
+        portalNode:
+          yaql:
+            expression: $.data.items().select($[1]).where($.type = 'primary-web').name.join("")
+            data:
+              get_param: [ config_data, node_map ]
       actions:
         - CREATE
 
-  mimepayload:
-    type: OS::Heat::MultipartMime
+  timeconfig:
+    type: OS::Heat::SoftwareConfig
+    condition: cfme_node
     properties:
-      parts:
-        - config:
-            get_resource: nodeconfig
+      group: ansible
+      inputs:
+        - name: timezone
+        - name: ntpServers
+      outputs:
+        - name: result
+      config:
+        str_replace:
+          template:
+            get_param: [ node_bridge, timeconfig ]
+          params:
+            herp: derp
+
+  timedeployment:
+    type: OS::Heat::SoftwareDeployment
+    condition: cfme_node
+    properties:
+      # deployments are sorted lexically for execution order
+      # we prefix this so it runs first
+      name: 01_timedeploy
+      config:
+        get_resource: timeconfig
+      server:
+        get_resource: my_instance
+      input_values:
+        timezone:
+          get_param: [ config_data, timezone ]
+        ntpServers:
+          get_param: [ config_data, ntpServers ]
+      actions:
+        - CREATE
+        - UPDATE
+
+  evmconfig:
+    type: OS::Heat::SoftwareConfig
+    condition:
+      and:
+      - cfme_node
+      - not:
+          cfme_database
+    properties:
+      group: ansible
+      inputs:
+        - name: cfme_node_type
+        - name: primaryDb
+        - name: dbPassword
+        - name: evm_nodeMap
+        - name: evm_ntpServers
+        - name: evm_smtpDomain
+        - name: evm_smtpFrom
+        - name: evm_smtpHost
+        - name: evm_loginText
+        - name: evm_companyName
+        - name: evm_timeZone
+      outputs:
+        - name: result
+      config:
+        str_replace:
+          template:
+            get_param: [ node_bridge, evmconfig ]
+          params:
+            herp: derp
+
+
+  evmdeployment:
+    type: OS::Heat::SoftwareDeployment
+    depends_on:
+      - roledeployment
+    condition:
+      and:
+      - cfme_node
+      - not:
+          cfme_database
+    properties:
+      name: 03_evmdeploy
+      config:
+        get_resource: evmconfig
+      server:
+        get_resource: my_instance
+      input_values:
+        cfme_node_type:
+          get_param: [ config_data, node_map, { get_param: [ node_bridge, guest_name ] }, type ]
+        dbPassword:
+          if:
+            - "novmdbpw"
+            - { get_param: [ node_bridge, database_password ] }
+            - { get_param: [ config_data, vmdb_password ] }
+        rootPassword:
+          if:
+            - "norootpw"
+            - { get_param: [ node_bridge, root_password ] }
+            - { get_param: [ config_data, root_password ] }
+        primaryDb:
+          get_param: [ config_data, database_internal_pool, 0 ]
+        evm_nodeCount:
+          yaql:
+            expression: $.data.cfme_portal_count + $.data.cfme_worker_count
+            data:
+              get_param: [ config_data, deploy_count ]
+        evm_ntpServers:
+          get_param: [ config_data, ntpServers ]
+        evm_timeZone:
+          get_param: [ config_data, evm_timeZone ]
+        evm_nodeMap:
+          get_param: [ config_data, node_map ]
+        evm_companyName:
+          get_param: [ config_data, evm_companyName ]
+        evm_loginText:
+          get_param: [ config_data, evm_loginText ]
+        evm_smtpFrom:
+          get_param: [ config_data, evm_smtpFrom ]
+        evm_smtpHost:
+          get_param: [ config_data, evm_smtpHost ]
+        evm_smtpDomain:
+          get_param: [ config_data, evm_smtpDomain ]
+      actions:
+        - CREATE
+        - UPDATE
 
   my_instance:
     type: OS::Nova::Server
@@ -181,6 +346,11 @@ resources:
             get_resource: my_instance
           volsize:
             get_param: [ node_bridge, volsize ]
+          voltype:
+            if:
+              - "has_voltype"
+              - { get_param: [ node_bridge, voltype ] }
+              - tripleo
 
   ssa_disk:
     type: OS::Heat::ResourceGroup
@@ -196,8 +366,14 @@ resources:
         properties:
           instance_id:
             get_resource: my_instance
-          volsize: 1024
-
+          volsize:
+            get_param: [ config_data, worker_tmp_vol_size ]
+          voltype:
+            if:
+              - "has_ssa_voltype"
+              - { get_param: [ node_bridge, ssa_voltype ] }
+              - tripleo
+              
   lb:
     type: OS::Heat::ResourceGroup
     depends_on: my_instance
@@ -218,25 +394,10 @@ resources:
             get_param: [ node_bridge, private_subnet_id ]
 
 outputs:
-  my_instance_private_ip:
-    description: IP address of my_instance in private network
-    value:
-      get_attr: [ my_instance, first_address ]
-  my_instance_public_ip:
-    description: Floating IP address of my_instance in public network
-    value:
-      get_attr: [ my_instance_floating_ip, floating_ip_address ]
+  
   my_instance:
     value:
        get_attr: [ my_instance, show ]
-  nodeconfig:
-    value:
-      get_attr: [ nodeconfig, show ]
-
-  roledeployment:
-    condition: cfme_node
-    value:
-      get_attr: [ roledeployment, show ]
 
   roledeployment_stdout:
     condition: cfme_node

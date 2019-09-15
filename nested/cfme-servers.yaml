@@ -19,18 +19,25 @@ resources:
     type: OS::Heat::RandomString
     properties:
       length: 16
+
+  cluster_root_password:
+    type: OS::Heat::RandomString
+    properties:
+      length: 16
       
   bastion:
     type: OS::Heat::ResourceGroup
     properties:
       count:
-        get_param: [ config_data, cfme_bastion_count ]
+        get_param: [ config_data, deploy_count, cfme_bastion_count ]
       resource_def:
         type:
           get_param: [ config_data, heat_cfme_node ] 
         properties:
           node_bridge:
             node_type: bastion
+            root_password:
+              get_resource: cluster_root_password
             guest_name: "cfme-bastion-%index%.idm.example.com"
             key_name:
               get_param: [ stack_bridge, cloudforms_keypair ]
@@ -60,13 +67,15 @@ resources:
     type: OS::Heat::ResourceGroup
     properties:
       count:
-        get_param: [ config_data, cfme_database_count ]
+        get_param: [ config_data, deploy_count, cfme_database_count ]
       resource_def:
         type:
           get_param: [ config_data, heat_cfme_node ]
         properties:
           node_bridge:
             node_type: database
+            root_password:
+              get_resource: cluster_root_password
             database_password:
               get_resource: cfme_db_password
             guest_name: "cfme-database-%index%.idm.example.com"
@@ -93,24 +102,31 @@ resources:
             volnum: 1
             volsize:
               get_param: [ config_data, database_data_vol_size ]
+            voltype:
+              get_param: [ config_data, database_data_vol_type ]
             lbnum: 0
             extra_nic: False
             cfme_node: True
+            timeconfig:
+              get_file: "https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/raw/master/ansible/time-configuration.yaml"
             roleconfig:
               get_file: "https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/raw/master/ansible/role-configuration.yaml"
-
-
+            evmconfig:
+              get_file: "https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/raw/master/ansible/evm-configuration.yaml"
+              
   portal:
     type: OS::Heat::ResourceGroup
     properties:
       count:
-        get_param: [ config_data, cfme_portal_count ]
+        get_param: [ config_data, deploy_count, cfme_portal_count ]
       resource_def:
         type:
           get_param: [ config_data, heat_cfme_node ]
         properties:
           node_bridge:
             node_type: portal
+            root_password:
+              get_resource: cluster_root_password
             database_password:
               get_resource: cfme_db_password
             guest_name: "cfme-portal-%index%.idm.example.com"
@@ -137,6 +153,8 @@ resources:
             volnum: 1
             volsize:
               get_param: [ config_data, portal_data_vol_size ]
+            voltype:
+              get_param: [ config_data, portal_data_vol_type ]
             lbnum: 1
             http_pool:
               get_param: [ stack_bridge, portal_lb_pool_http ]
@@ -144,20 +162,26 @@ resources:
               get_param: [ stack_bridge, portal_lb_pool_https ]
             extra_nic: False
             cfme_node: True
+            timeconfig:
+              get_file: "https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/raw/master/ansible/time-configuration.yaml"
             roleconfig:
               get_file: "https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/raw/master/ansible/role-configuration.yaml"
+            evmconfig:
+              get_file: "https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/raw/master/ansible/evm-configuration.yaml"
 
   worker:
     type: OS::Heat::ResourceGroup
     properties:
       count:
-        get_param: [ config_data, cfme_worker_count ]
+        get_param: [ config_data, deploy_count, cfme_worker_count ]
       resource_def:
         type:
           get_param: [ config_data, heat_cfme_node ]
         properties:
           node_bridge:          
             node_type: worker
+            root_password:
+              get_resource: cluster_root_password
             database_password:
               get_resource: cfme_db_password
             guest_name: "cfme-worker-%index%.idm.example.com"
@@ -185,14 +209,26 @@ resources:
             lbnum: 0
             volsize:
               get_param: [ config_data, worker_data_vol_size ]
+            voltype:
+              get_param: [ config_data, worker_data_vol_type ]
             ssa_host: True
+            ssa_voltype:
+              get_param: [ config_data, worker_tmp_vol_type ]
             extra_nic: True
             cfme_node: True
+            timeconfig:
+              get_file: "https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/raw/master/ansible/time-configuration.yaml"
             roleconfig:
               get_file: "https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/raw/master/ansible/role-configuration.yaml"
-              
+            evmconfig:
+              get_file: "https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/raw/master/ansible/evm-configuration.yaml"
+
+
 outputs:
 
   cfme_db_password:
     value:
       get_attr: [ cfme_db_password, show ]
+  cluster_root_password:
+    value:
+      get_attr: [ cluster_root_password, show ]
