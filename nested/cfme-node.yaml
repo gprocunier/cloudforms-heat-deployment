@@ -27,7 +27,7 @@ conditions:
   novmdbpw:
     equals: [ { get_param: [ config_data, vmdb_password ] }, '' ]
   cfme_database:
-    and:
+    or:
       - equals: [ { get_param: [ config_data, node_map, { get_param: [ node_bridge, guest_name ] }, type ] }, 'primary-db' ]
       - equals: [ { get_param: [ config_data, node_map, { get_param: [ node_bridge, guest_name ] }, type ] }, 'secondary-db' ]
   has_voltype:
