@@ -84,7 +84,7 @@
       retries: 60
       delay: 10
       until: "test_db_rep.query_result[0].node_name is defined and test_db_rep.query_result[0].node_name == '{{ primaryDb }}'"
-      when: cfme_node_type != 'secondary-db'
+      when: cfme_node_type == 'secondary-db'
     - name: initialize secondary database
       become: true
       shell:
