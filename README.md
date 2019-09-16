@@ -41,3 +41,7 @@ This project aims to deploy a minimal production like Red Hat Cloudforms cluster
   3. Copy a user-openrc.sh from your overcloud.  This user should have cloud operator rights.
   4. Download contrib/build.sh and contrib/ipa_enrollment.pl and modify to your environment.
   4. run ./build.sh
+
+## Resource Map
+
+<img src="https://github.com/gprocunier/cloudforms-heat-deployment/edit/master/images/resource_map.png" alt="Resource Map" width="800" height="600">
