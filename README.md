@@ -47,4 +47,4 @@ This project aims to deploy a minimal production like Red Hat Cloudforms cluster
 
 ## Resource Map
 
-<img src="https://github.com/gprocunier/cloudforms-heat-deployment/blob/master/images/resource_map.png" width="800" height="600">
+<img src="https://raw.githubusercontent.com/gprocunier/cloudforms-heat-deployment/master/images/resource_map.png" width="800" height="600">
