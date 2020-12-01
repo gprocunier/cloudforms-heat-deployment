@@ -93,7 +93,7 @@ parameter_defaults:
 
     ### EVM Config and Node Map
     evm_timeZone: 'Eastern Time (US & Canada)'
-    evm_companyName: 'SymRAD'
+    evm_companyName: 'ExampleCompany'
     evm_loginText: 'Research and Development Environment'
     evm_smtpDomain: 'example.com'
     evm_smtpFrom: 'cfme-admin@example.com'
